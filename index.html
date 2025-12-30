@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Los invertebrados</title>
+<style>
+  /* ====== Reset & base ====== */
+  * { box-sizing: border-box; margin:0; padding:0; }
+  :root{
+    --blue:#07145e;
+    --blue-dark:#04032B;
+    --blue-700:#1a3a5f;
+    --blue-600:#254fba;
+    --orange:#f59e42;
+    --orange-700:#e67e22;
+    --bg-grad-1:#1a3a5f;
+    --bg-grad-2:#0d2340;
+    --white:#ffffff;
+    --green:#2ecc71;
+    --red:#e74c3c;
+    --panel:#E8EAFF;
+  }
+  body{
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+    min-height:100vh; display:flex; justify-content:center; align-items:center; color:#333; padding:10px;
+  }
+  .game-container{
+    background:var(--white); border-radius:16px; box-shadow:0 12px 24px rgba(0,0,0,.12);
+    padding:1.2rem; max-width:980px; width:100%; min-height:680px;
+    position:relative; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  header{ text-align:center; margin-bottom:.8rem; margin-top:2rem; }
+  h1{ color:var(--blue); font-size:clamp(2rem,5.2vw,3.1rem); font-weight:900; letter-spacing:.5px; }
+  .subtitle{ color:var(--blue-700); font-size:clamp(1rem,3.5vw,1.25rem); margin-top:.25rem; }
+  .highlight-keyword{ color:var(--orange); font-weight:800; }
+
+  /* Global UI bits */
+  .btn{ color:#fff; border:none; padding:.75rem 1.2rem; border-radius:10px; cursor:pointer; font-weight:800;
+        transition:transform .08s ease, box-shadow .2s ease, background-color .25s ease; min-width:140px; height:48px;
+        display:inline-flex; align-items:center; justify-content:center; font-size: 1rem;}
+  .btn:hover{ transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.12); }
+  .btn:active{ transform:translateY(0); }
+  .btn:disabled{ opacity: .6; cursor: not-allowed; }
+  .btn-primary{ background:var(--orange); }
+  .btn-primary:hover{ background:var(--orange-700); }
+  .btn-blue{ background:var(--blue-600); }
+  .btn-blue:hover{ filter:brightness(.9); }
+  .btn-ghost{ background:#e6f2ff; color:var(--blue-700); }
+
+  .screen{ display:none; animation:fadeIn .35s ease; padding-bottom: 1rem;}
+  .screen.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+
+  /* Top controls (timer / progress / level) */
+  .game-info{ display:flex; gap:.6rem; align-items:center; justify-content:space-between; margin:.4rem 0 1rem; flex-wrap:wrap; }
+  .timer, .level-indicator{ font-weight:900; color:var(--blue-700); font-size:clamp(.95rem,2.3vw,1.15rem); }
+  .progress-bar{ flex:1; height:10px; background:#e6f2ff; border-radius:999px; overflow:hidden; }
+  .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--orange) 0%, var(--orange-700) 100%); transition:width .3s ease; }
+
+  /* Start screen */
+  .start-content { display:flex; flex-direction:column; justify-content:center; align-items:center; flex:1; gap:1rem; padding:1rem; width:100%;}
+  .advice-box{ background:var(--panel); border-left:4px solid var(--blue-700); padding:1rem 1.2rem; border-radius:12px;
+               color:var(--blue-700); max-width:760px; text-align:center; font-size:clamp(1rem,3vw,1.15rem); }
+  .start-image{ max-width: 300px; width: 100%; margin: 1rem auto 0; display: block; }
+
+  /* Sound button */
+  .mute-btn{ position:absolute; top:.8rem; right:.8rem; background:var(--orange); color:#fff; border:2px solid #fff; width:38px; height:38px; border-radius:50%; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; z-index:20; }
+  .mute-btn:hover{ background:var(--orange-700); }
+
+  /* Game layout */
+  .board{ display:flex; flex-direction:column; gap:.8rem; align-items:center; justify-content:center; flex: 1; width: 100%; }
+
+  /* Image stage */
+  .image-container { 
+      width:100%; 
+      max-width:320px; 
+      margin:0 auto; 
+      padding:.8rem; 
+      border:1px solid #ddd; 
+      border-radius:10px; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      background-color: #FFFFFF; 
+  }
+  .image-container img { display: block; max-width: 100%; height: auto; border-radius: 8px; object-fit: contain; max-height: 250px;}
+
+  /* Summary Screen Specifics */
+  .summary-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      margin: 1rem 0;
+  }
+
+  /* Dropdown styling (Select List) - Opens UP */
+  .select-container { position:relative; max-width: 240px; width: 100%; margin: 0.5rem auto; text-align: center; z-index: 10; }
+  .select-label { display: block; margin-bottom: 0.4rem; font-weight: 800; color: var(--blue-700); font-size: 0.95rem; }
+  .custom-select {
+    position: relative;
+    font-family: inherit;
+    width: 100%;
+    cursor: pointer;
+    background-color: #f8fbff;
+    border: 2px solid #d3e2ff;
+    border-radius: 10px;
+    padding: 0.6rem 0.85rem;
+    color: var(--blue-700);
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+  }
+  .custom-select:hover { border-color: var(--blue-600); }
+  .select-arrow { transition: transform 0.2s; font-size: 0.85rem; }
+  .custom-select.open .select-arrow { transform: rotate(180deg); }
+  
+  .select-options {
+    position: absolute;
+    top: auto;
+    bottom: 100%; /* Opens UP */
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background-color: var(--white);
+    border: 1px solid #ddd;
+    border-radius: 10px 10px 0 0; /* Rounded top corners */
+    max-height: 0;
+    overflow-y: auto;
+    transition: max-height 0.3s ease-out;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+    margin-bottom: -1px;
+  }
+  .select-options.open { 
+    max-height: 300px; /* Increased height to fit all items */
+    border-bottom: none; 
+  }
+  .select-option {
+    padding: 0.65rem 0.85rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #333;
+    text-align: left;
+    transition: background-color 0.1s;
+  }
+  .select-option:hover { background-color: #f0f0f0; }
+
+  /* Dropdown state styles */
+  .custom-select.correct { border-color: var(--green); background-color: #ecfff4; }
+  .custom-select.incorrect { border-color: var(--red); background-color: #fff1f1; }
+
+  .select-selected {
+    padding: 0.6rem 0.85rem;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+  }
+  .select-selected.correct-blink { animation: correct-flash 0.2s linear; }
+  .select-selected.incorrect-blink { animation: incorrect-flash 0.3s linear; }
+
+  @keyframes correct-flash { 0% { background-color: #ecfff4; } 50% { background-color: var(--green); } 100% { background-color: #ecfff4; } }
+  @keyframes incorrect-flash { 0% { background-color: #fff1f1; } 50% { background-color: var(--red); } 100% { background-color: #fff1f1; } }
+
+  /* Buttons area */
+  .game-buttons-area { display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; min-height: 50px; }
+
+  /* Hall of Fame Styles */
+  .hall-of-fame {
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    order: 10; 
+  }
+
+  .hall-of-fame-title {
+    color: var(--blue-700);
+    font-weight: 800;
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 0.8rem;
+  }
+
+  .hall-of-fame-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .hall-of-fame-table th {
+    background: var(--blue-600);
+    color: white;
+    padding: 0.5rem;
+    text-align: left;
+  }
+
+  .hall-of-fame-table td {
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .hall-of-fame-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .hall-of-fame-table tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+  
+  .hall-of-fame-error, .hall-of-fame-loading {
+      padding: 1rem;
+      text-align: center;
+      color: var(--blue-700);
+      font-style: italic;
+      font-size: 0.9rem;
+  }
+  
+  .hall-of-fame-error { color: var(--red); }
+
+  /* Modal Styles */
+  .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 1000;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  
+  .modal-content {
+      background: var(--white);
+      padding: 2rem;
+      border-radius: 16px;
+      width: 90%; max-width: 400px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      transform: translateY(20px);
+      transition: transform 0.3s ease;
+  }
+  .modal-overlay.open .modal-content { transform: translateY(0); }
+  
+  .modal-title { color: var(--blue-700); font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; }
+  .modal-input { width: 100%; padding: 0.8rem; margin-bottom: 1rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; font-family: inherit; }
+  .modal-input:focus { border-color: var(--orange); outline: none; }
+  .modal-info { margin-bottom: 1.5rem; color: var(--blue-700); font-weight: 600; }
+  .modal-buttons { display: flex; gap: 1rem; justify-content: center; }
+
+  /* Results screen */
+  .results{ display:flex; flex-direction:column; align-items:center; gap:.6rem; text-align:center; min-height:calc(100vh - 180px); }
+  .final-title{ color:var(--blue-dark); font-weight:900; }
+  .big-score{ font-size:clamp(2.2rem,6vw,3.4rem); color:var(--blue-600); font-weight:900; }
+  .score-title{ font-size:1.0rem; color:var(--blue-700); margin-top:1rem; }
+  .final-time{ color:var(--blue-700); }
+  .trophy{ font-size:clamp(4rem,10vw,6rem); margin:.2rem 0; color:var(--orange); animation:bounce 1s ease infinite; }
+  @keyframes bounce { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-8px);} }
+  .credit{ color:var(--blue-700); margin-top:1rem; }
+  .school-logo{ display:block; margin:1rem auto 0; max-width:160px; height:auto; }
+
+  /* Final Messages Styling */
+  .final-msg-style {
+      color: var(--blue-dark);
+      font-weight: 800;
+      font-size: clamp(1.4rem, 4vw, 1.8rem);
+      margin: 0.5rem 0 1rem;
+      line-height: 1.4;
+  }
+
+  /* Confetti */
+  .confetti{ position:fixed; width:10px; height:10px; border-radius:50%; animation: confetti-fall 3s linear forwards; z-index:999; }
+  @keyframes confetti-fall{ 0%{ transform:translate(0, -20px) rotate(0); opacity:1;} 100%{ transform:translate(var(--tx), var(--ty)) rotate(360deg); opacity:0; } }
+  
+  /* Loading Indicator */
+  .loading-indicator {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7);
+    display: flex; justify-content: center; align-items: center; z-index: 2000; flex-direction: column;
+  }
+  .loading-spinner {
+    width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--orange);
+    border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .loading-text { color: white; font-size: 1.2rem; text-align: center; }
+
+  /* Ayuda texto posicionamiento */
+  .game-help-text {
+    font-size: 0.95rem;
+    color: var(--blue-700);
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <button class="mute-btn" id="muteBtn" title="Silenciar/Activar sonido">🔊</button>
+
+  <!-- Start Screen -->
+  <section class="screen active" id="startScreen" aria-labelledby="title">
+    <header>
+      <h1 id="title">Los invertebrados</h1>
+      <div class="subtitle">Clasifica los siguientes invertebrados en su correspondiente grupo</div>
+    </header>
+    <div class="start-content">
+      <div class="advice-box" role="note" aria-live="polite">
+        Recuerda: los invertebrados se clasifican según sus características Sus tipos son: 
+        <span class="highlight-keyword">artrópodos</span>, <span class="highlight-keyword">moluscos</span>, <span class="highlight-keyword">poríferos</span>, <span class="highlight-keyword">equinodermos</span>, <span class="highlight-keyword">cnidarios</span> y <span class="highlight-keyword">gusanos</span>.<br>
+        <strong>¡Ánimo!</strong>
+      </div>
+      <button class="btn btn-primary" id="playBtn">Comenzar</button>
+      
+      <!-- Hall of Fame Debajo del botón Comenzar -->
+      <div class="hall-of-fame" id="hallOfFame">
+        <div class="hall-of-fame-title">🏆 Mejores puntuaciones 🏆</div>
+        <table class="hall-of-fame-table">
+          <thead>
+            <tr>
+              <th>Posición</th>
+              <th>Nombre</th>
+              <th>Puntos</th>
+              <th>Tiempo</th>
+            </tr>
+          </thead>
+          <tbody id="hofTableBody">
+            <!-- Aquí se cargarán las puntuaciones dinámicamente -->
+          </tbody>
+        </table>
+        <div id="hofLoading" class="hall-of-fame-loading">Cargando mejores puntuaciones...</div>
+        <div id="hofError" class="hall-of-fame-error" style="display:none;">Error al cargar el Hall de la Fama.</div>
+      </div>
+
+      <img class="start-image" src="https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Ni%C3%B1os.png" alt="Children learning">
+    </div>
+  </section>
+
+  <!-- Summary Screen -->
+  <section class="screen" id="summaryScreen">
+    <header>
+      <h1>Estudia los grupos de invertebrados</h1>
+    </header>
+    <div class="start-content">
+        <img class="summary-image" src="https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Invertebrados.png" alt="Tabla de invertebrados">
+        <button class="btn btn-primary" id="goToGameBtn">Juego</button>
+    </div>
+  </section>
+
+  <!-- Game Screen -->
+  <section class="screen" id="gameScreen">
+    <header>
+      <h1 id="gameTitle">Indica a qué grupo pertenecen estos invertebrados</h1>
+    </header>
+    
+    <!-- Texto de ayuda debajo del título -->
+    <div class="game-help-text">
+      Usa la <span class="highlight-keyword">lista desplegable</span> para seleccionar el grupo.
+    </div>
+
+    <div class="game-info">
+      <div class="level-indicator" id="levelIndicator">Nivel 1/13</div>
+      <div class="progress-bar" aria-label="Progreso"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="timer" id="timer">00:00</div>
+    </div>
+
+    <div class="board">
+      <div class="image-container">
+        <img id="animalImg" src="" alt="Imagen de invertebrado">
+      </div>
+
+      <div class="select-container">
+        <label id="selectLabel" for="customSelect" class="select-label">Invertebrado</label>
+        <div id="customSelect" class="custom-select" role="listbox" tabindex="0" aria-expanded="false" aria-labelledby="selectLabel">
+          <span id="selectSelected" class="select-selected">Seleccionar opción</span>
+          <span class="select-arrow">▼</span>
+        </div>
+        <div id="selectOptions" class="select-options" role="presentation">
+          </div>
+      </div>
+
+      <div class="game-buttons-area">
+        <button class="btn btn-blue" id="checkBtn">Comprobar</button>
+        <button class="btn btn-primary" id="continueBtn" style="display:none;">Continuar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results Screen -->
+  <section class="screen" id="resultsScreen">
+    <header>
+      <h1 class="final-title">Los invertebrados</h1>
+    </header>
+    <div class="results">
+      <div id="trophyBox" style="display:none;">
+        <div class="trophy">🏆</div>
+      </div>
+      <div class="score-title">Puntuación:</div>
+      <div class="big-score" id="finalScore">0</div>
+      <div id="finalMsg" class="final-msg-style"></div>
+      <div class="final-time">Tiempo empleado: <span id="finalTime">00:00</span></div>
+      <button class="btn btn-primary" id="backToMenuBtn">Volver al menú</button>
+      <span class="credit">Creado por Manuel J. Ventura</span>
+      <img class="school-logo" src="https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Siurot.png?raw=true" alt="School logo" />
+    </div>
+  </section>
+</div>
+
+<!-- Modal Submit Score -->
+<div class="modal-overlay" id="submitModal">
+    <div class="modal-content">
+        <div class="modal-title">¡Juego Terminado!</div>
+        <div class="modal-info">Tiempo: <span id="modalTime">00:00</span> | Puntos: <span id="modalScore">0</span></div>
+        <input type="text" id="playerName" class="modal-input" placeholder="Nombre" maxlength="20" autocomplete="off">
+        <input type="text" id="playerSurname" class="modal-input" placeholder="Apellido" maxlength="20" autocomplete="off">
+        <div class="modal-buttons">
+            <button id="discardScoreBtn" class="btn btn-ghost">Cancelar</button>
+            <button id="submitScoreBtn" class="btn btn-primary">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<div class="loading-indicator" id="loadingIndicator" style="display: none;">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Cargando audios...</div>
+</div>
+
+<script>
+/************** Data **************/
+const INVERTEBRATES_DATA = [
+  // Artrópodos
+  { group: 'Artrópodo', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Hormiga.png' },
+  { group: 'Artrópodo', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Ara%C3%B1a.png' },
+  { group: 'Artrópodo', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Langosta.png' },
+  { group: 'Artrópodo', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Escalopendra.png' },
+  // Moluscos
+  { group: 'Molusco', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Mejill.png' },
+  { group: 'Molusco', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/cefalopodo.png' },
+  { group: 'Molusco', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/gasteropodo.png' },
+  // Poríferos
+  { group: 'Porífero', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Porifero.png' },
+  // Equinodermos
+  { group: 'Equinodermo', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Estrella.png' },
+  { group: 'Equinodermo', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Erizo.png' },
+  // Cnidarios
+  { group: 'Cnidario', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Anemona.png' },
+  { group: 'Cnidario', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Medusa.png' },
+  // Gusanos
+  { group: 'Gusano', image: 'https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/Animales_y_Plantas/Invertebrados/Gusano.png' }
+];
+
+const INVERTEBRATE_GROUPS = ["Artrópodo", "Molusco", "Porífero", "Equinodermo", "Cnidario", "Gusano"];
+const TOTAL_QUESTIONS = 13;
+
+/************** Configuración Hall of Fame **************/
+const SHEET_NAME = "Invertebrados";
+const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbu0fcjUhXKQ0sbUkNOx4YhfUno7mif5clU3lBipogFsCtq7UytDrEW8NbTXBvM0LCPQ/exec";
+
+/************** Audio **************/
+const soundFiles = {
+  completed: 'https://github.com/ManuelVS8/Efectos_audio/raw/7b86808e254100aeaba6285b3e0b82650ae78055/Completado.mp3',
+  correct:   'https://github.com/ManuelVS8/Efectos_audio/raw/7b86808e254100aeaba6285b3e0b82650ae78055/Correcto.mp3',
+  victory:   'https://github.com/ManuelVS8/Efectos_audio/raw/7b86808e254100aeaba6285b3e0b82650ae78055/Termin%C3%A9.mp3',
+  error:     'https://github.com/ManuelVS8/Efectos_audio/raw/7b86808e254100aeaba6285b3e0b82650ae78055/Error.mp3',
+  tap:       'https://github.com/ManuelVS8/Efectos_audio/raw/37b3eb2da9c15c04dfb71dfe1be60f088ea3cdfc/Tap.mp3'
+};
+const sounds = {}; let isMuted = false; let audioUnlocked = false;
+
+function preloadSounds() {
+  const promises = Object.entries(soundFiles).map(([k, url]) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const a = new Audio(url);
+        a.preload = 'auto';
+        a.oncanplaythrough = () => { sounds[k] = a; resolve(); };
+        a.onerror = () => { console.error(`Error al cargar ${k} de audio: ${url}`); sounds[k] = null; resolve(); };
+      } catch(e) {
+        console.error(`Error al crear Audio para ${k}:`, e);
+        sounds[k] = null;
+        resolve();
+      }
+    });
+  });
+  return Promise.all(promises);
+}
+
+function unlockAudio(){
+  if (audioUnlocked) return;
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g);
+    g.connect(ctx.destination);
+    g.gain.value = 0.0001;
+    o.start();
+    o.stop(ctx.currentTime + 0.02);
+    audioUnlocked = true;
+  } catch(e){
+    console.error("Error al desbloquear audio:", e);
+  }
+}
+
+function play(name){
+  if(!audioUnlocked) { unlockAudio(); return; }
+  if(isMuted) return;
+  const a = sounds[name];
+  if(!a) return;
+  try{
+    const clone = a.cloneNode(true);
+    clone.currentTime = 0;
+    clone.play();
+  } catch(e){
+    console.log(`Audio play error for ${name}`, e);
+  }
+}
+
+const reproducirSonidoCorrecto = () => play('correct');
+const reproducirSonidoError = () => play('error');
+const reproducirSonidoCompletado = () => play('completed');
+const reproducirSonidoVictoria = () => play('victory');
+const reproducirSonidoTap = () => play('tap');
+
+/************** State **************/
+const el = (id) => document.getElementById(id);
+
+const animalImg = el('animalImg');
+const progressFill = el('progressFill');
+const timerEl = el('timer');
+const levelIndicatorEl = el('levelIndicator');
+const checkBtn = el('checkBtn');
+const continueBtn = el('continueBtn');
+const customSelect = el('customSelect');
+const selectOptionsEl = el('selectOptions');
+const selectSelectedEl = el('selectSelected');
+const playBtn = el('playBtn');
+const loadingIndicator = el('loadingIndicator');
+const backToMenuBtn = el('backToMenuBtn');
+const finalMsgEl = el('finalMsg');
+const goToGameBtn = el('goToGameBtn');
+
+let gameOrder = [];
+let currentPairIndex = 0;
+let correctFirstAttempts = 0;
+let currentQuestionScored = false;
+let timerInt = null;
+let elapsed = 0; 
+
+let currentSelection = null;
+let isProcessing = false;
+let userInteracted = false;
+
+/************** Utilities **************/
+function fmtTime(sFloat){
+    // sFloat is total seconds (e.g. 65.4)
+    const m = Math.floor(sFloat / 60).toString().padStart(2,'0');
+    const secs = Math.floor(sFloat % 60).toString().padStart(2,'0');
+    const tenths = Math.floor((sFloat % 1) * 10).toString();
+    return `${m}:${secs}.${tenths}`;
+}
+function startTimer(){ 
+    clearInterval(timerInt); 
+    const startTime = Date.now();
+    timerInt = setInterval(()=>{ 
+        const now = Date.now();
+        const delta = (now - startTime) / 1000;
+        elapsed = delta; 
+        timerEl.textContent = fmtTime(elapsed); 
+    },100); 
+}
+function stopTimer(){ clearInterval(timerInt); }
+
+function updateProgress(){
+  const pct = (currentPairIndex / TOTAL_QUESTIONS) * 100;
+  progressFill.style.width = pct + '%';
+  levelIndicatorEl.textContent = `Nivel ${currentPairIndex + 1}/${TOTAL_QUESTIONS}`;
+}
+
+function shuffle(a){ const arr=[...a]; for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+    el(screenId).classList.add('active');
+}
+
+/************** Dropdown logic **************/
+function closeSelect() {
+  selectOptionsEl.classList.remove('open');
+  customSelect.classList.remove('open');
+  customSelect.setAttribute('aria-expanded', 'false');
+  customSelect.classList.remove('active');
+}
+
+function openSelect() {
+  if (isProcessing) return;
+  reproducirSonidoTap();
+  selectOptionsEl.classList.add('open');
+  customSelect.classList.add('open');
+  customSelect.setAttribute('aria-expanded', 'true');
+  customSelect.classList.add('active');
+}
+
+function createDropdownOptions(options) {
+  selectOptionsEl.innerHTML = '';
+  options.forEach(option => {
+    const div = document.createElement('div');
+    div.className = 'select-option';
+    div.textContent = option;
+    div.setAttribute('role', 'option');
+    div.setAttribute('aria-selected', 'false');
+    div.dataset.value = option;
+    div.addEventListener('click', onSelectOptionClick);
+    selectOptionsEl.appendChild(div);
+  });
+}
+
+function onSelectOptionClick(e) {
+  reproducirSonidoTap();
+  currentSelection = e.target.dataset.value;
+  selectSelectedEl.textContent = currentSelection;
+  closeSelect();
+  customSelect.classList.remove('correct', 'incorrect');
+  selectSelectedEl.classList.remove('correct-blink', 'incorrect-blink');
+  
+  if(continueBtn.style.display === 'none') {
+    checkBtn.style.display = 'inline-flex';
+    checkBtn.disabled = false;
+  }
+  
+  selectSelectedEl.style.backgroundColor = 'transparent';
+}
+
+customSelect.addEventListener('click', (e) => {
+  if (selectOptionsEl.classList.contains('open')) {
+    closeSelect();
+  } else {
+    openSelect();
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (!customSelect.contains(e.target) && !selectOptionsEl.contains(e.target)) {
+    closeSelect();
+  }
+});
+
+/************** Hall of Fame Logic **************/
+let isHofLoading = false;
+
+async function loadHallOfFame() {
+    if (isHofLoading) return;
+    isHofLoading = true;
+
+    const tbody = el('hofTableBody');
+    const loading = el('hofLoading');
+    const errorMsg = el('hofError');
+    
+    tbody.innerHTML = '';
+    loading.style.display = 'block';
+    errorMsg.style.display = 'none';
+
+    try {
+        const response = await fetch(`${APP_SCRIPT_URL}?action=read&sheet=${SHEET_NAME}&t=${Date.now()}`);
+        if(!response.ok) throw new Error("Error de red");
+        const data = await response.json();
+        
+        loading.style.display = 'none';
+        
+        if (data.status === 'success' && data.data && Array.isArray(data.data)) {
+            let scores = data.data;
+            if(scores.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">Aún no hay puntuaciones.</td></tr>';
+                isHofLoading = false;
+                return;
+            }
+            
+            scores.sort((a, b) => {
+                const scoreA = parseInt(a.score) || 0;
+                const scoreB = parseInt(b.score) || 0;
+                if (scoreA !== scoreB) {
+                    return scoreB - scoreA; 
+                }
+                const timeA = parseFloat(a.time) || 0;
+                const timeB = parseFloat(b.time) || 0;
+                return timeA - timeB; 
+            });
+            
+            scores.slice(0, 10).forEach((row, index) => {
+                const tr = document.createElement('tr');
+                // CAMBIO: Se muestra el apellido completo
+                const displayName = `${row.name} ${row.surname || ''}`;
+                const timeNum = parseFloat(row.time);
+                const timeStr = fmtTime(isNaN(timeNum) ? 0 : timeNum);
+                
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${displayName}</td>
+                    <td>${row.score}</td>
+                    <td>${timeStr}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            throw new Error("Formato de datos incorrecto");
+        }
+    } catch (error) {
+        console.error("Error cargando HOF:", error);
+        loading.style.display = 'none';
+        errorMsg.style.display = 'block';
+        tbody.innerHTML = '';
+    } finally {
+        isHofLoading = false;
+    }
+}
+
+async function submitScore() {
+    const name = el('playerName').value.trim();
+    const surname = el('playerSurname').value.trim();
+    const submitBtn = el('submitScoreBtn');
+    const discardBtn = el('discardScoreBtn');
+    const modal = el('submitModal');
+
+    if (!name || !surname) {
+        alert("Por favor, introduce tu nombre y apellido.");
+        return;
+    }
+
+    submitBtn.disabled = true;
+    discardBtn.disabled = true;
+    submitBtn.textContent = "Enviando...";
+
+    const payload = {
+        score: Math.round((correctFirstAttempts / TOTAL_QUESTIONS) * 100),
+        time: elapsed,
+        name: name,
+        surname: surname
+    };
+
+    try {
+        const response = await fetch(APP_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'write',
+                sheet: SHEET_NAME,
+                data: payload
+            })
+        });
+        
+        closeModal();
+        loadHallOfFame();
+        
+    } catch (error) {
+        console.error("Error enviando puntuación:", error);
+        alert("Hubo un error al enviar la puntuación. Inténtalo de nuevo.");
+    } finally {
+        submitBtn.disabled = false;
+        discardBtn.disabled = false;
+        submitBtn.textContent = "Guardar";
+    }
+}
+
+function showSubmitModal(time, score) {
+    const modal = el('submitModal');
+    el('modalTime').textContent = fmtTime(time);
+    el('modalScore').textContent = score;
+    el('playerName').value = '';
+    el('playerSurname').value = '';
+    modal.classList.add('open');
+    el('playerName').focus();
+}
+
+function closeModal() {
+    el('submitModal').classList.remove('open');
+}
+
+el('submitScoreBtn').addEventListener('click', submitScore);
+el('discardScoreBtn').addEventListener('click', () => {
+    reproducirSonidoTap();
+    closeModal();
+});
+
+
+/************** Game Flow **************/
+function setupGame() {
+  gameOrder = shuffle([...Array(INVERTEBRATES_DATA.length).keys()]);
+  currentPairIndex = 0;
+  createDropdownOptions(INVERTEBRATE_GROUPS);
+  showCurrentQuestion();
+  updateProgress();
+  showScreen('gameScreen');
+}
+
+function showCurrentQuestion() {
+  isProcessing = false;
+  currentQuestionScored = false;
+  const currentData = INVERTEBRATES_DATA[gameOrder[currentPairIndex]];
+  animalImg.src = currentData.image;
+  animalImg.alt = `Imagen de un invertebrado`;
+
+  currentSelection = null;
+  selectSelectedEl.textContent = `Seleccionar opción`;
+  customSelect.classList.remove('correct', 'incorrect');
+  selectSelectedEl.classList.remove('correct-blink', 'incorrect-blink');
+  checkBtn.style.display = 'inline-flex';
+  checkBtn.disabled = false;
+  continueBtn.style.display = 'none';
+}
+
+function checkAnswer() {
+  if (isProcessing || currentSelection === null) return;
+  isProcessing = true;
+
+  const currentData = INVERTEBRATES_DATA[gameOrder[currentPairIndex]];
+  const correctAnswer = currentData.group;
+
+  if (currentSelection === correctAnswer) {
+    if (!currentQuestionScored) {
+        correctFirstAttempts++;
+    }
+    currentQuestionScored = true;
+
+    reproducirSonidoCorrecto();
+    customSelect.classList.add('correct');
+    selectSelectedEl.classList.add('correct-blink');
+    checkBtn.disabled = true;
+
+    setTimeout(() => {
+      moveToNextQuestion();
+    }, 500);
+  } else {
+    currentQuestionScored = true;
+    reproducirSonidoError();
+    customSelect.classList.add('incorrect');
+    selectSelectedEl.classList.add('incorrect-blink');
+    
+    checkBtn.style.display = 'none';
+    continueBtn.style.display = 'inline-flex';
+    isProcessing = false;
+  }
+}
+
+function moveToNextQuestion() {
+  currentPairIndex++;
+  updateProgress();
+
+  if (currentPairIndex < TOTAL_QUESTIONS) {
+    showCurrentQuestion();
+  } else {
+    finishGame();
+  }
+}
+
+/************** Finish Game **************/
+function finishGame(){
+  stopTimer();
+
+  const finalScore = Math.round((correctFirstAttempts / TOTAL_QUESTIONS) * 100);
+
+  showScreen('resultsScreen');
+
+  const trophyBox = el('trophyBox');
+  
+  el('finalScore').textContent = finalScore;
+  el('finalTime').textContent = fmtTime(elapsed);
+
+  let msg;
+  if (finalScore === 100) {
+    msg = '¡Genial! ¡Puntuación perfecta!';
+    trophyBox.style.display = 'block';
+    reproducirSonidoVictoria();
+    spawnConfetti();
+  } else {
+    trophyBox.style.display = 'none';
+    reproducirSonidoCompletado();
+    if (finalScore >= 80) {
+      msg = 'Casi lo logras. ¡Sigue practicando!';
+    } else if (finalScore >= 50) {
+      msg = 'No está mal, pero aún puedes hacerlo mejor';
+    } else {
+      msg = 'Vaya desastre... ¿Seguro que has estudiado?';
+    }
+  }
+  finalMsgEl.textContent = msg;
+
+  showSubmitModal(elapsed, finalScore);
+}
+
+/************** Helpers **************/
+function spawnConfetti(){
+  for(let i=0;i<120;i++){
+    setTimeout(()=>{
+      const c=document.createElement('div'); c.className='confetti';
+      const x=Math.random()*window.innerWidth;
+      const ty=window.innerHeight+20;
+      const tx=(Math.random()-.5)*160;
+      const colors=['#ff595e','#1982c4','#6a4c93','#ffca3a','#8ac926','#ff924c','#00c2ff'];
+      c.style.left=x+'px'; c.style.top='-10px';
+      c.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
+      const size=6+Math.random()*8; c.style.width=size+'px'; c.style.height=size+'px';
+      c.style.setProperty('--tx', tx+'px'); c.style.setProperty('--ty', ty+'px');
+      document.body.appendChild(c);
+      setTimeout(()=>c.remove(), 3200);
+    }, i*18);
+  }
+}
+
+/************** Routing & Events **************/
+function gotoStart(){
+  showScreen('startScreen');
+  currentPairIndex = 0; correctFirstAttempts = 0; elapsed = 0;
+  timerEl.textContent = '00:00'; progressFill.style.width = '0%';
+  stopTimer();
+  userInteracted = false;
+  currentQuestionScored = false;
+  
+  // FIX: Asegurarse de que el botón Comenzar esté activo al volver
+  playBtn.disabled = false;
+  
+  loadHallOfFame();
+}
+
+function trackUserInteraction() {
+  if (!userInteracted) {
+    userInteracted = true;
+    unlockAudio();
+  }
+}
+
+// Start -> Summary
+playBtn.addEventListener('click', async ()=>{
+  trackUserInteraction();
+  reproducirSonidoTap();
+  unlockAudio();
+
+  loadingIndicator.style.display = 'flex';
+  playBtn.disabled = true;
+
+  try {
+    await preloadSounds();
+    loadingIndicator.style.display = 'none';
+    showScreen('summaryScreen');
+  } catch (error) {
+    console.error("Error during setup:", error);
+    loadingIndicator.style.display = 'none';
+    // FIX: Reactivar botón si falla la carga
+    playBtn.disabled = false;
+  }
+});
+
+// Summary -> Game
+goToGameBtn.addEventListener('click', () => {
+    trackUserInteraction();
+    reproducirSonidoTap();
+    setupGame();
+    startTimer();
+});
+
+checkBtn.addEventListener('click', checkAnswer);
+
+continueBtn.addEventListener('click', () => {
+  trackUserInteraction();
+  reproducirSonidoTap();
+  moveToNextQuestion();
+});
+
+backToMenuBtn.addEventListener('click', ()=>{
+  trackUserInteraction();
+  reproducirSonidoTap();
+  gotoStart();
+});
+
+el('muteBtn').addEventListener('click', ()=>{
+  trackUserInteraction();
+  isMuted = !isMuted;
+  el('muteBtn').textContent = isMuted ? '🔇' : '🔊';
+});
+
+
+document.addEventListener('click', trackUserInteraction, { once: false });
+document.addEventListener('touchstart', trackUserInteraction, { once: false });
+document.addEventListener('keydown', trackUserInteraction, { once: false });
+
+// Init
+gotoStart();
+</script>
+</body>
+</html>
